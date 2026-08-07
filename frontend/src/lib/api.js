@@ -14,6 +14,12 @@ export const login = (name, invite_code) =>
 export const createWorkout = (payload) =>
   api.post("/workouts", payload).then((r) => r.data);
 
+export const updateWorkout = (id, payload) =>
+  api.patch(`/workouts/${id}`, payload).then((r) => r.data);
+
+export const deleteWorkout = (id, user_id) =>
+  api.delete(`/workouts/${id}`, { params: { user_id } }).then((r) => r.data);
+
 export const listWorkouts = (params = {}) =>
   api.get("/workouts", { params }).then((r) => r.data);
 

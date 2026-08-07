@@ -21,6 +21,7 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
   const [timeframe, setTimeframe] = useState("week");
   const [openRecord, setOpenRecord] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [stats, setStats] = useState({
     total_points: 0,
@@ -40,7 +41,18 @@ export default function Dashboard() {
 
   const handleWorkoutLogged = () => {
     setOpenRecord(false);
+    setEditingWorkout(null);
     refresh();
+  };
+
+  const handleEditWorkout = (workout) => {
+    setEditingWorkout(workout);
+    setOpenRecord(true);
+  };
+
+  const handleDialogOpenChange = (open) => {
+    setOpenRecord(open);
+    if (!open) setEditingWorkout(null);
   };
 
   return (
@@ -205,7 +217,12 @@ export default function Dashboard() {
                 Activity
               </h2>
             </div>
-            <ActivityFeed refreshKey={refreshKey} />
+            <ActivityFeed
+              refreshKey={refreshKey}
+              currentUserId={user?.id}
+              onEdit={handleEditWorkout}
+              onChanged={refresh}
+            />
           </section>
         </div>
       </main>
@@ -228,9 +245,10 @@ export default function Dashboard() {
 
       <RecordWorkoutDialog
         open={openRecord}
-        onOpenChange={setOpenRecord}
+        onOpenChange={handleDialogOpenChange}
         userId={user?.id}
         onLogged={handleWorkoutLogged}
+        workoutToEdit={editingWorkout}
       />
     </div>
   );

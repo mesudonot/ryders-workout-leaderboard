@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { PersonSimpleRun, Barbell, PersonSimpleTaiChi } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { createWorkout } from "@/lib/api";
+import { createWorkout, updateWorkout } from "@/lib/api";
 
 const WORKOUT_TYPES = [
   { value: "Running", Icon: PersonSimpleRun, color: "#FF3B30" },
@@ -26,24 +26,39 @@ const calcPoints = (duration, calories) => {
   return 10 + d + (d >= 45 ? 5 : 0) + Math.floor(c / 10);
 };
 
-export default function RecordWorkoutDialog({ open, onOpenChange, userId, onLogged }) {
+export default function RecordWorkoutDialog({
+  open,
+  onOpenChange,
+  userId,
+  onLogged,
+  workoutToEdit = null,
+}) {
+  const isEdit = Boolean(workoutToEdit);
   const [type, setType] = useState("Running");
   const [duration, setDuration] = useState("");
   const [calories, setCalories] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    if (workoutToEdit) {
+      setType(workoutToEdit.type);
+      setDuration(String(workoutToEdit.duration_min));
+      setCalories(String(workoutToEdit.calories));
+      setNote(workoutToEdit.note || "");
+    } else {
+      setType("Running");
+      setDuration("");
+      setCalories("");
+      setNote("");
+    }
+  }, [open, workoutToEdit]);
+
   const projectedPoints = useMemo(
     () => calcPoints(duration, calories),
     [duration, calories]
   );
-
-  const reset = () => {
-    setType("Running");
-    setDuration("");
-    setCalories("");
-    setNote("");
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,18 +75,23 @@ export default function RecordWorkoutDialog({ open, onOpenChange, userId, onLogg
 
     setSaving(true);
     try {
-      await createWorkout({
+      const payload = {
         user_id: userId,
         type,
         duration_min: d,
         calories: c,
         note: note.trim(),
-      });
-      toast.success(`+${projectedPoints} points logged`);
-      reset();
+      };
+      if (isEdit) {
+        await updateWorkout(workoutToEdit.id, payload);
+        toast.success(`Workout updated · ${projectedPoints} pts`);
+      } else {
+        await createWorkout(payload);
+        toast.success(`+${projectedPoints} points logged`);
+      }
       onLogged?.();
     } catch (err) {
-      const msg = err?.response?.data?.detail || "Could not log workout";
+      const msg = err?.response?.data?.detail || "Could not save workout";
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -86,13 +106,15 @@ export default function RecordWorkoutDialog({ open, onOpenChange, userId, onLogg
       >
         <DialogHeader className="border-b border-white/10 px-6 py-5">
           <p className="text-[10px] font-bold uppercase tracking-athletic text-[#CCFF00]">
-            New Session
+            {isEdit ? "Editing" : "New Session"}
           </p>
           <DialogTitle className="font-display text-3xl font-black uppercase tracking-tight">
-            Log Workout
+            {isEdit ? "Fix Workout" : "Log Workout"}
           </DialogTitle>
           <DialogDescription className="text-xs text-white/50">
-            Pick a type, punch in minutes and calories. Points calculate live.
+            {isEdit
+              ? "Update details — points recalculate instantly."
+              : "Pick a type, punch in minutes and calories. Points calculate live."}
           </DialogDescription>
         </DialogHeader>
 
@@ -188,14 +210,15 @@ export default function RecordWorkoutDialog({ open, onOpenChange, userId, onLogg
           >
             <div>
               <div className="text-[10px] font-bold uppercase tracking-athletic text-white/50">
-                Projected Points
+                {isEdit ? "Updated Points" : "Projected Points"}
               </div>
               <div className="mt-0.5 text-[11px] text-white/40">
                 10 base · 1/min · +5 if 45+ min · 1/10 cal
               </div>
             </div>
             <div className="font-display text-4xl font-black uppercase tracking-tight text-[#CCFF00]">
-              +{projectedPoints}
+              {isEdit ? "" : "+"}
+              {projectedPoints}
             </div>
           </div>
 
@@ -218,7 +241,7 @@ export default function RecordWorkoutDialog({ open, onOpenChange, userId, onLogg
               className="h-12 flex-1 rounded-none bg-[#CCFF00] text-black hover:bg-[#CCFF00]/85 disabled:opacity-60"
             >
               <span className="font-display text-sm font-black uppercase tracking-athletic">
-                {saving ? "Saving…" : "Log It"}
+                {saving ? "Saving…" : isEdit ? "Save Changes" : "Log It"}
               </span>
             </Button>
           </div>

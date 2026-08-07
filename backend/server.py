@@ -67,6 +67,14 @@ class WorkoutCreate(BaseModel):
     note: Optional[str] = ""
 
 
+class WorkoutUpdate(BaseModel):
+    user_id: str
+    type: WorkoutType
+    duration_min: int
+    calories: int
+    note: Optional[str] = ""
+
+
 class LeaderboardEntry(BaseModel):
     user_id: str
     name: str
@@ -149,6 +157,45 @@ async def create_workout(payload: WorkoutCreate):
     doc['created_at'] = doc['created_at'].isoformat()
     await db.workouts.insert_one(doc)
     return workout
+
+
+@api_router.patch("/workouts/{workout_id}", response_model=Workout)
+async def update_workout(workout_id: str, payload: WorkoutUpdate):
+    if payload.duration_min <= 0:
+        raise HTTPException(status_code=400, detail="Duration must be > 0")
+    if payload.calories < 0:
+        raise HTTPException(status_code=400, detail="Calories must be >= 0")
+
+    existing = await db.workouts.find_one({"id": workout_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Workout not found")
+    if existing['user_id'] != payload.user_id:
+        raise HTTPException(status_code=403, detail="Not allowed to edit this workout")
+
+    points = calc_points(payload.duration_min, payload.calories)
+    update_doc = {
+        "type": payload.type,
+        "duration_min": payload.duration_min,
+        "calories": payload.calories,
+        "note": payload.note or "",
+        "points": points,
+    }
+    await db.workouts.update_one({"id": workout_id}, {"$set": update_doc})
+    merged = {**existing, **update_doc}
+    if isinstance(merged.get('created_at'), str):
+        merged['created_at'] = datetime.fromisoformat(merged['created_at'])
+    return Workout(**merged)
+
+
+@api_router.delete("/workouts/{workout_id}")
+async def delete_workout(workout_id: str, user_id: str = Query(...)):
+    existing = await db.workouts.find_one({"id": workout_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Workout not found")
+    if existing['user_id'] != user_id:
+        raise HTTPException(status_code=403, detail="Not allowed to delete this workout")
+    await db.workouts.delete_one({"id": workout_id})
+    return {"deleted": True, "id": workout_id}
 
 
 @api_router.get("/workouts", response_model=List[Workout])
