@@ -15,6 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import Leaderboard from "@/components/Leaderboard";
 import ActivityFeed from "@/components/ActivityFeed";
 import RecordWorkoutDialog from "@/components/RecordWorkoutDialog";
+import ProfileDrawer from "@/components/ProfileDrawer";
 import { getMyStats } from "@/lib/api";
 
 export default function Dashboard() {
@@ -22,6 +23,7 @@ export default function Dashboard() {
   const [timeframe, setTimeframe] = useState("week");
   const [openRecord, setOpenRecord] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState(null);
+  const [profileUserId, setProfileUserId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [stats, setStats] = useState({
     total_points: 0,
@@ -55,6 +57,9 @@ export default function Dashboard() {
     if (!open) setEditingWorkout(null);
   };
 
+  const openProfile = (uid) => setProfileUserId(uid);
+  const closeProfile = () => setProfileUserId(null);
+
   return (
     <div className="relative min-h-screen bg-[#0A0A0A] text-white pb-32">
       {/* Sticky header */}
@@ -84,16 +89,30 @@ export default function Dashboard() {
               </div>
             </div>
             {user?.picture ? (
-              <img
-                src={user.picture}
-                alt=""
-                aria-hidden="true"
-                className="h-9 w-9 border border-[#CCFF00]/40 object-cover pointer-events-none"
-              />
+              <button
+                type="button"
+                data-testid="my-profile-btn"
+                onClick={() => openProfile(user.user_id)}
+                aria-label="Open my profile"
+                className="relative z-10 h-9 w-9 overflow-hidden border border-[#CCFF00]/40 transition hover:border-[#CCFF00]"
+              >
+                <img
+                  src={user.picture}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-full w-full object-cover"
+                />
+              </button>
             ) : (
-              <div className="flex h-9 w-9 items-center justify-center border border-[#CCFF00]/40 bg-[#CCFF00]/10 font-display text-sm font-black uppercase text-[#CCFF00] pointer-events-none">
+              <button
+                type="button"
+                data-testid="my-profile-btn"
+                onClick={() => openProfile(user?.user_id)}
+                aria-label="Open my profile"
+                className="relative z-10 flex h-9 w-9 items-center justify-center border border-[#CCFF00]/40 bg-[#CCFF00]/10 font-display text-sm font-black uppercase text-[#CCFF00] transition hover:bg-[#CCFF00]/20"
+              >
                 {user?.name?.slice(0, 2).toUpperCase()}
-              </div>
+              </button>
             )}
             <Button
               data-testid="signout-btn"
@@ -214,6 +233,7 @@ export default function Dashboard() {
               timeframe={timeframe}
               currentUserId={user?.user_id}
               refreshKey={refreshKey}
+              onSelectUser={openProfile}
             />
           </section>
 
@@ -231,6 +251,7 @@ export default function Dashboard() {
               currentUserId={user?.user_id}
               onEdit={handleEditWorkout}
               onChanged={refresh}
+              onSelectUser={openProfile}
             />
           </section>
         </div>
@@ -257,6 +278,15 @@ export default function Dashboard() {
         onOpenChange={handleDialogOpenChange}
         onLogged={handleWorkoutLogged}
         workoutToEdit={editingWorkout}
+      />
+
+      <ProfileDrawer
+        userId={profileUserId}
+        open={Boolean(profileUserId)}
+        onOpenChange={(open) => !open && closeProfile()}
+        currentUserId={user?.user_id}
+        onEdit={handleEditWorkout}
+        onChanged={refresh}
       />
     </div>
   );

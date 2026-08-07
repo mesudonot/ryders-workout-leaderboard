@@ -12,7 +12,7 @@ const initialFrom = (name) =>
     .join("")
     .toUpperCase();
 
-export default function Leaderboard({ timeframe, currentUserId, refreshKey }) {
+export default function Leaderboard({ timeframe, currentUserId, refreshKey, onSelectUser }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,10 +90,19 @@ export default function Leaderboard({ timeframe, currentUserId, refreshKey }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: idx * 0.04, ease: "easeOut" }}
             data-testid={`leaderboard-row-${rank}`}
-            className={`grid grid-cols-[48px_1fr_auto_auto] items-center gap-4 border-b border-white/10 px-4 py-4 transition sm:grid-cols-[48px_1fr_80px_100px_120px] sm:px-6 ${
+            onClick={() => onSelectUser?.(row.user_id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectUser?.(row.user_id);
+              }
+            }}
+            className={`grid grid-cols-[48px_1fr_auto_auto] items-center gap-4 border-b border-white/10 px-4 py-4 transition cursor-pointer sm:grid-cols-[48px_1fr_80px_100px_120px] sm:px-6 ${
               isMe
-                ? "border-l-2 border-l-[#CCFF00] bg-[#CCFF00]/[0.06]"
-                : "hover:bg-white/[0.02]"
+                ? "border-l-2 border-l-[#CCFF00] bg-[#CCFF00]/[0.06] hover:bg-[#CCFF00]/[0.1]"
+                : "hover:bg-white/[0.03]"
             }`}
           >
             {/* Rank */}
