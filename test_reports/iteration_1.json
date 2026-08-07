@@ -1,0 +1,41 @@
+{
+  "summary": "Backend fully verified (login, workout points, validation, leaderboard, stats). Frontend flows work end-to-end but a decorative 'grain' overlay in Dashboard intercepts pointer events on the Log Workout button (and header text intercepts sign-out). Clicks succeed only when dispatched via JS. Real users likely cannot open the record dialog or sign out via mouse click.",
+  "tested_scope": ["backend", "frontend", "auth", "integration"],
+  "passed": [
+    "POST /api/auth/login: wrong invite_code -> 401; valid code -> user returned (Alex, Bailey)",
+    "POST /api/workouts: Running 45/320 -> 92 pts; Yoga 20/60 -> 36 pts (calc_points correct)",
+    "POST /api/workouts validations: duration_min=0 -> 400; unknown user_id -> 404; type='Swimming' -> 422",
+    "GET /api/workouts: returns list sorted by created_at desc, respects limit",
+    "GET /api/leaderboard?timeframe=all|week: aggregates points per user, sorted desc",
+    "GET /api/users/{id}/stats: totals correct for Bailey; 404 for unknown id",
+    "Frontend /enter: renders form with entry-name-input/entry-code-input/entry-submit-btn; wrong invite code keeps user on /enter (no navigation)",
+    "Frontend /enter -> /board: valid SWEAT2026 + name navigates to /board and shows user's name (CASEY)",
+    "Dashboard renders all stat cards (stat-points, stat-workouts, stat-minutes, stat-calories), timeframe tabs (tab-week/month/all) and open-record-btn",
+    "Record dialog: Running + 30 min + 250 cal shows projected +65 (10+30+0+25). Submit closes dialog, toast '+65 points logged' shown, stats update to 65/1/30/250",
+    "Leaderboard shows current user (Casey) highlighted with '· YOU' label; order Alex 92 > Casey 65 > Bailey 36 as expected",
+    "Activity feed shows the new workout item (CASEY · RUN, +65 PTS)",
+    "Timeframe tabs (week/month/all) switch without crashing"
+  ],
+  "failed": [
+    {
+      "area": "Frontend / Dashboard.jsx line 93",
+      "issue": "The decorative <div className='grain absolute inset-0' /> inside the hero <section> covers the entire hero (including the 'Log Workout' button) without pointer-events-none. document.elementFromPoint at the button center returns the grain div, not the button. Playwright click(force=True) also fails because the DOM click event goes to the topmost element. Only element.click() via JS succeeds. Real users clicking the Log Workout button will hit the overlay and nothing happens.",
+      "evidence": "elementFromPoint on open-record-btn returned {top_class: 'grain absolute inset-0', top_tag: 'DIV', same: False}. Native Playwright click retried and always got intercepted by 'grain absolute inset-0'.",
+      "priority": "HIGH"
+    },
+    {
+      "area": "Frontend / Dashboard.jsx header",
+      "issue": "Sign-out button in the sticky header is also intercepted by sibling text nodes ('Athlete' label in header) during click; Playwright reports the header subtree intercepts pointer events. Likely needs pointer-events-none on decorative text or reordering z-index.",
+      "evidence": "Playwright retries on [data-testid='signout-btn'] show: <div ...class='text-[10px] uppercase tracking-athletic text-white/40'>Athlete</div> from header subtree intercepts pointer events.",
+      "priority": "HIGH"
+    }
+  ],
+  "action_items": [
+    "Add pointer-events-none to the decorative grain overlay in /app/frontend/src/pages/Dashboard.jsx line 93: <div className='grain absolute inset-0 pointer-events-none' />. Apply the same fix to any other 'grain'/decorative absolute overlays in the app.",
+    "Fix header layout so the 'Athlete' label / user badge does not sit on top of the sign-out button — either add pointer-events-none on the decorative text, or ensure signout-btn has a higher z-index / larger hit target.",
+    "After fix, retest: (a) click Log Workout via real mouse click, (b) submit a workout, (c) click sign-out and verify redirect to /enter, (d) direct-load /board while unauthenticated redirects to /enter (this last check was not verified because sign-out click was blocked)."
+  ],
+  "success_rate": {"backend": "100%", "frontend": "70%"},
+  "retest_needed": true,
+  "full_testing_deferred": true
+}
