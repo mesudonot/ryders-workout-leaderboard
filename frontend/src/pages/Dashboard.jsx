@@ -62,8 +62,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="hidden text-right sm:block pointer-events-none">
               <div className="text-[10px] uppercase tracking-athletic text-white/40">
                 Athlete
               </div>
@@ -71,7 +71,7 @@ export default function Dashboard() {
                 {user?.name}
               </div>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center border border-[#CCFF00]/40 bg-[#CCFF00]/10 font-display text-sm font-black uppercase text-[#CCFF00]">
+            <div className="flex h-9 w-9 items-center justify-center border border-[#CCFF00]/40 bg-[#CCFF00]/10 font-display text-sm font-black uppercase text-[#CCFF00] pointer-events-none">
               {user?.name?.slice(0, 2).toUpperCase()}
             </div>
             <Button
@@ -79,7 +79,7 @@ export default function Dashboard() {
               variant="ghost"
               size="icon"
               onClick={signOut}
-              className="text-white/50 hover:bg-white/5 hover:text-white"
+              className="relative z-10 text-white/50 hover:bg-white/5 hover:text-white"
               aria-label="Sign out"
             >
               <SignOut size={18} weight="bold" />
@@ -90,7 +90,7 @@ export default function Dashboard() {
 
       {/* Hero / Stats */}
       <section className="relative overflow-hidden border-b border-white/10">
-        <div className="grain absolute inset-0" />
+        <div className="grain absolute inset-0 pointer-events-none" aria-hidden="true" />
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div>

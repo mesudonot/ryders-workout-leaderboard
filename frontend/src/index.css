@@ -39,6 +39,9 @@ body {
 }
 
 /* Grain / noise texture overlay used behind hero areas */
+.grain {
+    pointer-events: none;
+}
 .grain::before {
     content: "";
     position: absolute;

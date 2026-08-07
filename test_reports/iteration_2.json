@@ -1,0 +1,20 @@
+{
+  "summary": "Retest confirms both previous HIGH priority pointer-events bugs are FIXED. Natural mouse clicks (no force, no JS-dispatch) work for open-record-btn and signout-btn. Full E2E flow (Dana login -> Yoga 60/180 -> projected +93 -> submit -> stats update -> feed/leaderboard show Dana -> signout -> /enter -> direct /board redirects to /enter) all pass.",
+  "tested_scope": ["frontend", "integration"],
+  "passed": [
+    "Login as Dana with SWEAT2026 -> /board",
+    "elementFromPoint on open-record-btn returns a child of the button (grain overlay no longer intercepts)",
+    "open-record-btn opens dialog with a natural page.click (no force)",
+    "Yoga + 60 min + 180 cal -> projected-points shows +93 (10 base + 60 + 5 bonus + 18)",
+    "Submit closes dialog and stats update to Total Points=93, Minutes=60",
+    "Dana appears in board (feed/leaderboard)",
+    "elementFromPoint on signout-btn returns the BUTTON element (Athlete label no longer intercepts)",
+    "Natural click on signout-btn redirects to /enter",
+    "Direct GET /board while unauthenticated redirects to /enter"
+  ],
+  "failed": [],
+  "action_items": [],
+  "success_rate": {"backend": "100% (from iteration_1)", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true
+}
