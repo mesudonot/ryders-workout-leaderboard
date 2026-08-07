@@ -1,0 +1,99 @@
+{
+  "theme": "dark",
+  "archetype": "ARCHETYPE 2: THE PERFORMANCE PRO",
+  "typography": {
+    "fonts": {
+      "headings": "Barlow Condensed, sans-serif",
+      "body": "DM Sans, sans-serif",
+      "instructions": "Avoid Inter completely. Use Barlow Condensed (900 weight) for large headings to give a heavy-weight athletic feel, and DM Sans for body text with increased tracking for legibility."
+    },
+    "hierarchy": {
+      "h1": "text-5xl sm:text-6xl tracking-tighter font-black uppercase",
+      "h2": "text-3xl sm:text-4xl tracking-tight font-bold uppercase",
+      "h3": "text-2xl font-bold tracking-tight uppercase",
+      "body": "text-base leading-relaxed tracking-wide",
+      "labels": "text-xs font-bold uppercase tracking-[0.2em]"
+    }
+  },
+  "colors": {
+    "background": "#0A0A0A",
+    "surface": "#141414",
+    "primary": "#FF3B30",
+    "secondary": "#007AFF",
+    "accent": "#CCFF00",
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA"
+    },
+    "borders": "rgba(255, 255, 255, 0.1)",
+    "instructions": "Use Tactical Minimalism. Replace soft shadows with 1px solid strokes or 2px 'Inner Glow' highlights using the accent color for active elements. Backgrounds must be pure deep obsidian, never muddy dark grey."
+  },
+  "visual_enhancers": {
+    "surfaces": "Use flat solid surfaces for dashboard and card elements. Stick to 1px subtle borders (border-white/10). No soft UI shadows. Use the 'Grid Borders' pattern for the activity feed to expose the layout skeleton.",
+    "glassmorphism": "For sticky headers or floating navs ONLY: bg-black/80 backdrop-blur-xl border-b border-white/10. Do not use fully transparent headers.",
+    "textures": "Subtle noise/grain overlay (opacity 0.03) to break the digital flatness and give it an elite, raw feel."
+  },
+  "components": {
+    "buttons": "Pill-shaped or sharp rectangular, high-saturation blocks (bg-[#FF3B30] hover:bg-[#FF3B30]/80 hover:text-white). For secondary actions, use 1px outline with clear hover states.",
+    "inputs": "Shadcn input components, customized with bg-[#141414] border-white/20 focus:border-[#CCFF00] focus:ring-1 focus:ring-[#CCFF00].",
+    "leaderboard_row": "Cardless, dense rectangular rows. Highlight the current logged-in user's row with a subtle border of #CCFF00 and a very faint background tint (e.g., bg-[#CCFF00]/10). Elevate the #1 rank with a distinct visual marker (gold accent or bold typography).",
+    "tabs": "Use Shadcn Tabs for the Week/Month/All-Time toggle. Override default h-9 with h-auto and generous padding (py-3 px-6). The active tab must feature a sharp bottom border or high-contrast background, not a soft pill.",
+    "forms": "Workout recording should be accessible via a prominent Floating Action Button (FAB) or sticky bottom/top button that triggers a Shadcn Drawer (on mobile) or Dialog (desktop). Include simple inputs: Workout Type (Select), Duration in mins (Number), Calories (Number), Optional Note (Textarea)."
+  },
+  "layouts": {
+    "general": "Mobile-first, responsive grids tailored for phone logging at the gym. Never center-align paragraphs.",
+    "dashboard_grid": "Mode B: High Density Grid for profile stats and recent activity. grid-cols-2 md:grid-cols-4. Use tight gaps (gap-4).",
+    "spacing": "Generous spacing within components. Use p-6 or p-8 inside cards to prevent text collision with borders. Add massive pb-24 for the main container on mobile to account for sticky bottom navigation or FABs."
+  },
+  "motion": {
+    "general": "Snappy, precision-based micro-interactions. Avoid slow, floaty animations. It should feel like a stopwatch.",
+    "hover_states": "Buttons and interactive list items scale slightly (-translate-y-0.5) with borders brightening.",
+    "page_transitions": "Use framer-motion for staggered entrance of leaderboard rows (0.05s stagger per item)."
+  },
+  "accessibility": {
+    "contrast": "Text must meet 4.5:1 ratio. Text on the #CCFF00 accent buttons must be solid black (#000000).",
+    "focus": "focus:ring-2 focus:ring-[#CCFF00] focus:outline-none.",
+    "aria": "Use aria-hidden for purely decorative icons."
+  },
+  "media": {
+    "images": [
+      {
+        "category": "Running Workout Type",
+        "url": "https://images.unsplash.com/photo-1744060204728-f68e434a3edf",
+        "description": "Runner sprinting on a track in golden sunlight. Use as a background or banner for running activity cards."
+      },
+      {
+        "category": "Weights Workout Type",
+        "url": "https://images.unsplash.com/photo-1646072507652-128f79e5e10d",
+        "description": "Man holding a kettlebell. Use as a background or banner for weightlifting activity cards."
+      },
+      {
+        "category": "Yoga Workout Type",
+        "url": "https://images.unsplash.com/photo-1599447291979-c6c0c6dc4227",
+        "description": "Woman doing yoga. Use as a background or banner for yoga activity cards."
+      }
+    ],
+    "icons": "Install and use @phosphor-icons/react (weight: 'bold' or 'fill') for an athletic, sturdy look. Do not use generic lucide icons for primary navigation if Phosphor is available."
+  },
+  "instructions_to_main_agent": [
+    "WRITE ALL CODE IN .jsx OR .js FILES. Do not use .tsx or .ts.",
+    "Execute `yarn add @phosphor-icons/react` to install the required icon set.",
+    "Add `<link href=\"https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@400;500;700&display=swap\" rel=\"stylesheet\">` to public/index.html.",
+    "Set the app background explicitly to #0A0A0A globally in index.css.",
+    "Build a gated Entry Screen: Simple prompt for 'Invite Code' and 'Name'. Store this in localStorage/Context to simulate login.",
+    "Implement the Scoring Logic on the frontend: 10 (base points for showing up) + durationInMinutes (1 pt/min) + (durationInMinutes >= 45 ? 5 : 0) + Math.floor(caloriesBurned / 10).",
+    "Leaderboard View: Create dummy data for friends to populate the board. Implement the toggle for This Week / This Month / All-Time (can just re-sort/filter dummy data or randomly alter it to simulate the change).",
+    "Profile View: Show the user's logged workout history and their current rank.",
+    "Activity Feed: A chronological feed of recent workouts from all friends.",
+    "Make sure every interactive element (buttons, tabs, inputs, workout list items) has a `data-testid` attribute (e.g., `data-testid=\"record-workout-btn\"`)."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not converge toward generic 'AI slop'. Make it creative and distinctive.",
+    "Do not use dark colors as gradients. Use solid dark colors (#0A0A0A and #141414).",
+    "Create depth through 1px crisp borders, NOT muddy soft shadows.",
+    "Avoid centering layouts unnecessarily; use alignment to create visual tension.",
+    "NEVER use emojis for icons. Use Phosphor Icons.",
+    "Ensure all interactive elements have hover and focus states.",
+    "Apply `data-testid` to all inputs, buttons, tabs, and list items."
+  ]
+}
