@@ -1,25 +1,28 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Request, Response, Header, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Literal
 import uuid
 from datetime import datetime, timezone, timedelta
+import httpx
 
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 INVITE_CODE = os.environ.get('INVITE_CODE', 'SWEAT2026')
+EMERGENT_AUTH_SESSION_URL = 'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data'
+SESSION_COOKIE = 'session_token'
+SESSION_DAYS = 7
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -31,19 +34,15 @@ WorkoutType = Literal['Running', 'Weights', 'Yoga']
 
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    email: str
     name: str
+    picture: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class LoginRequest(BaseModel):
-    name: str
+class GateRequest(BaseModel):
     invite_code: str
-
-
-class LoginResponse(BaseModel):
-    user: User
-    invite_code_valid: bool = True
 
 
 class Workout(BaseModel):
@@ -51,6 +50,7 @@ class Workout(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     user_name: str
+    user_picture: Optional[str] = None
     type: WorkoutType
     duration_min: int
     calories: int
@@ -59,16 +59,7 @@ class Workout(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class WorkoutCreate(BaseModel):
-    user_id: str
-    type: WorkoutType
-    duration_min: int
-    calories: int
-    note: Optional[str] = ""
-
-
-class WorkoutUpdate(BaseModel):
-    user_id: str
+class WorkoutInput(BaseModel):
     type: WorkoutType
     duration_min: int
     calories: int
@@ -78,6 +69,7 @@ class WorkoutUpdate(BaseModel):
 class LeaderboardEntry(BaseModel):
     user_id: str
     name: str
+    picture: Optional[str] = None
     total_points: int
     workouts_count: int
     total_minutes: int
@@ -86,7 +78,6 @@ class LeaderboardEntry(BaseModel):
 
 # ============= Helpers =============
 def calc_points(duration_min: int, calories: int) -> int:
-    """10 base + 1 pt/min + 5 bonus (>=45 min) + calories/10."""
     base = 10
     duration_pts = max(0, duration_min)
     bonus = 5 if duration_min >= 45 else 0
@@ -100,7 +91,38 @@ def since_for_timeframe(timeframe: str) -> Optional[datetime]:
         return now - timedelta(days=7)
     if timeframe == 'month':
         return now - timedelta(days=30)
-    return None  # all-time
+    return None
+
+
+async def _load_user_from_token(token: str) -> Optional[dict]:
+    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+    if not session:
+        return None
+    expires_at = session.get("expires_at")
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
+        await db.user_sessions.delete_one({"session_token": token})
+        return None
+    user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
+    return user
+
+
+async def get_current_user(
+    request: Request,
+    authorization: Optional[str] = Header(default=None),
+) -> dict:
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token and authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = await _load_user_from_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    return user
 
 
 # ============= Routes =============
@@ -109,44 +131,107 @@ async def root():
     return {"message": "SweatBoard API"}
 
 
-@api_router.post("/auth/login", response_model=LoginResponse)
-async def login(payload: LoginRequest):
+@api_router.post("/auth/gate")
+async def gate(payload: GateRequest):
     if payload.invite_code.strip().upper() != INVITE_CODE.upper():
         raise HTTPException(status_code=401, detail="Invalid invite code")
+    return {"ok": True}
 
-    name = payload.name.strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Name is required")
 
-    # Find existing (case-insensitive) or create
-    existing = await db.users.find_one({"name_lower": name.lower()}, {"_id": 0})
+@api_router.post("/auth/session")
+async def create_session(response: Response, x_session_id: Optional[str] = Header(default=None)):
+    if not x_session_id:
+        raise HTTPException(status_code=400, detail="Missing X-Session-ID header")
+
+    async with httpx.AsyncClient(timeout=15.0) as http:
+        try:
+            r = await http.get(
+                EMERGENT_AUTH_SESSION_URL,
+                headers={"X-Session-ID": x_session_id},
+            )
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=502, detail=f"Auth provider unreachable: {e}")
+
+    if r.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid session_id")
+    data = r.json()
+    email = data.get("email")
+    name = data.get("name")
+    picture = data.get("picture")
+    session_token = data.get("session_token")
+    if not (email and session_token):
+        raise HTTPException(status_code=502, detail="Malformed auth response")
+
+    existing = await db.users.find_one({"email": email}, {"_id": 0})
     if existing:
-        user = User(**existing)
-        return LoginResponse(user=user)
+        user_id = existing["user_id"]
+        # Refresh name/picture from Google
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$set": {"name": name or existing.get("name"), "picture": picture}},
+        )
+        # Also update denormalized name/picture on their workouts
+        await db.workouts.update_many(
+            {"user_id": user_id},
+            {"$set": {"user_name": name or existing.get("name"), "user_picture": picture}},
+        )
+    else:
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        await db.users.insert_one({
+            "user_id": user_id,
+            "email": email,
+            "name": name or email.split("@")[0],
+            "picture": picture,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
 
-    user = User(name=name)
-    doc = user.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    doc['name_lower'] = name.lower()
-    await db.users.insert_one(doc)
-    return LoginResponse(user=user)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)
+    await db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    response.set_cookie(
+        key=SESSION_COOKIE,
+        value=session_token,
+        max_age=SESSION_DAYS * 24 * 60 * 60,
+        path="/",
+        httponly=True,
+        secure=True,
+        samesite="none",
+    )
+    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return {"user": User(**user_doc).model_dump(mode="json")}
+
+
+@api_router.get("/auth/me")
+async def me(current: dict = Depends(get_current_user)):
+    return {"user": User(**current).model_dump(mode="json")}
+
+
+@api_router.post("/auth/logout")
+async def logout(request: Request, response: Response):
+    token = request.cookies.get(SESSION_COOKIE)
+    if token:
+        await db.user_sessions.delete_one({"session_token": token})
+    response.delete_cookie(SESSION_COOKIE, path="/", samesite="none", secure=True)
+    return {"ok": True}
 
 
 @api_router.post("/workouts", response_model=Workout)
-async def create_workout(payload: WorkoutCreate):
+async def create_workout(payload: WorkoutInput, current: dict = Depends(get_current_user)):
     if payload.duration_min <= 0:
         raise HTTPException(status_code=400, detail="Duration must be > 0")
     if payload.calories < 0:
         raise HTTPException(status_code=400, detail="Calories must be >= 0")
 
-    user = await db.users.find_one({"id": payload.user_id}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     points = calc_points(payload.duration_min, payload.calories)
     workout = Workout(
-        user_id=payload.user_id,
-        user_name=user['name'],
+        user_id=current["user_id"],
+        user_name=current.get("name", "Athlete"),
+        user_picture=current.get("picture"),
         type=payload.type,
         duration_min=payload.duration_min,
         calories=payload.calories,
@@ -160,7 +245,11 @@ async def create_workout(payload: WorkoutCreate):
 
 
 @api_router.patch("/workouts/{workout_id}", response_model=Workout)
-async def update_workout(workout_id: str, payload: WorkoutUpdate):
+async def update_workout(
+    workout_id: str,
+    payload: WorkoutInput,
+    current: dict = Depends(get_current_user),
+):
     if payload.duration_min <= 0:
         raise HTTPException(status_code=400, detail="Duration must be > 0")
     if payload.calories < 0:
@@ -169,7 +258,7 @@ async def update_workout(workout_id: str, payload: WorkoutUpdate):
     existing = await db.workouts.find_one({"id": workout_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Workout not found")
-    if existing['user_id'] != payload.user_id:
+    if existing['user_id'] != current["user_id"]:
         raise HTTPException(status_code=403, detail="Not allowed to edit this workout")
 
     points = calc_points(payload.duration_min, payload.calories)
@@ -188,11 +277,11 @@ async def update_workout(workout_id: str, payload: WorkoutUpdate):
 
 
 @api_router.delete("/workouts/{workout_id}")
-async def delete_workout(workout_id: str, user_id: str = Query(...)):
+async def delete_workout(workout_id: str, current: dict = Depends(get_current_user)):
     existing = await db.workouts.find_one({"id": workout_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Workout not found")
-    if existing['user_id'] != user_id:
+    if existing['user_id'] != current["user_id"]:
         raise HTTPException(status_code=403, detail="Not allowed to delete this workout")
     await db.workouts.delete_one({"id": workout_id})
     return {"deleted": True, "id": workout_id}
@@ -208,6 +297,7 @@ async def list_workouts(user_id: Optional[str] = None, limit: int = 50):
     for d in docs:
         if isinstance(d.get('created_at'), str):
             d['created_at'] = datetime.fromisoformat(d['created_at'])
+        d.setdefault('user_picture', None)
     return [Workout(**d) for d in docs]
 
 
@@ -225,7 +315,8 @@ async def get_leaderboard(timeframe: str = Query("all", pattern="^(week|month|al
         {
             "$group": {
                 "_id": "$user_id",
-                "name": {"$first": "$user_name"},
+                "name": {"$last": "$user_name"},
+                "picture": {"$last": "$user_picture"},
                 "total_points": {"$sum": "$points"},
                 "workouts_count": {"$sum": 1},
                 "total_minutes": {"$sum": "$duration_min"},
@@ -240,6 +331,7 @@ async def get_leaderboard(timeframe: str = Query("all", pattern="^(week|month|al
         entries.append(LeaderboardEntry(
             user_id=row['_id'],
             name=row['name'],
+            picture=row.get('picture'),
             total_points=row['total_points'],
             workouts_count=row['workouts_count'],
             total_minutes=row['total_minutes'],
@@ -248,14 +340,10 @@ async def get_leaderboard(timeframe: str = Query("all", pattern="^(week|month|al
     return entries
 
 
-@api_router.get("/users/{user_id}/stats")
-async def user_stats(user_id: str):
-    user = await db.users.find_one({"id": user_id}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
+@api_router.get("/users/me/stats")
+async def user_stats(current: dict = Depends(get_current_user)):
     pipeline = [
-        {"$match": {"user_id": user_id}},
+        {"$match": {"user_id": current["user_id"]}},
         {
             "$group": {
                 "_id": "$user_id",
@@ -269,7 +357,10 @@ async def user_stats(user_id: str):
     stats = {"total_points": 0, "workouts_count": 0, "total_minutes": 0, "total_calories": 0}
     async for row in db.workouts.aggregate(pipeline):
         stats = {k: row.get(k, 0) for k in stats.keys()}
-    return {"user": {"id": user['id'], "name": user['name']}, "stats": stats}
+    return {
+        "user": {"user_id": current["user_id"], "name": current.get("name"), "picture": current.get("picture")},
+        "stats": stats,
+    }
 
 
 app.include_router(api_router)
@@ -282,10 +373,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 

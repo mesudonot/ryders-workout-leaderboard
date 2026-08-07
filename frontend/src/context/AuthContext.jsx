@@ -1,34 +1,62 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { fetchMe, logout as apiLogout } from "@/lib/api";
 
 const AuthCtx = createContext(null);
-const STORAGE_KEY = "sweatboard.user";
+const GATE_KEY = "sweatboard.gate";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [gatePassed, setGatePassed] = useState(
+    () => localStorage.getItem(GATE_KEY) === "true"
+  );
+
+  const checkAuth = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { user } = await fetchMe();
+      setUser(user);
+    } catch (e) {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
+    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+    // Skip /me on OAuth callback — AuthCallback will exchange the session_id first.
+    if (window.location.hash?.includes("session_id=")) {
+      setLoading(false);
+      return;
+    }
+    checkAuth();
+  }, [checkAuth]);
+
+  const passGate = () => {
+    localStorage.setItem(GATE_KEY, "true");
+    setGatePassed(true);
+  };
+
+  const resetGate = () => {
+    localStorage.removeItem(GATE_KEY);
+    setGatePassed(false);
+  };
+
+  const signOut = async () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setUser(JSON.parse(raw));
+      await apiLogout();
     } catch (e) {
       // ignore
     }
-    setReady(true);
-  }, []);
-
-  const signIn = (u) => {
-    setUser(u);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-  };
-
-  const signOut = () => {
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
+    resetGate();
   };
 
   return (
-    <AuthCtx.Provider value={{ user, ready, signIn, signOut }}>
+    <AuthCtx.Provider
+      value={{ user, setUser, loading, gatePassed, passGate, resetGate, signOut, checkAuth }}
+    >
       {children}
     </AuthCtx.Provider>
   );

@@ -15,7 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import Leaderboard from "@/components/Leaderboard";
 import ActivityFeed from "@/components/ActivityFeed";
 import RecordWorkoutDialog from "@/components/RecordWorkoutDialog";
-import { getUserStats } from "@/lib/api";
+import { getMyStats } from "@/lib/api";
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -34,7 +34,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user) return;
-    getUserStats(user.id)
+    getMyStats()
       .then((r) => setStats(r.stats))
       .catch(() => {});
   }, [user, refreshKey]);
@@ -83,9 +83,18 @@ export default function Dashboard() {
                 {user?.name}
               </div>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center border border-[#CCFF00]/40 bg-[#CCFF00]/10 font-display text-sm font-black uppercase text-[#CCFF00] pointer-events-none">
-              {user?.name?.slice(0, 2).toUpperCase()}
-            </div>
+            {user?.picture ? (
+              <img
+                src={user.picture}
+                alt=""
+                aria-hidden="true"
+                className="h-9 w-9 border border-[#CCFF00]/40 object-cover pointer-events-none"
+              />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center border border-[#CCFF00]/40 bg-[#CCFF00]/10 font-display text-sm font-black uppercase text-[#CCFF00] pointer-events-none">
+                {user?.name?.slice(0, 2).toUpperCase()}
+              </div>
+            )}
             <Button
               data-testid="signout-btn"
               variant="ghost"
@@ -203,7 +212,7 @@ export default function Dashboard() {
 
             <Leaderboard
               timeframe={timeframe}
-              currentUserId={user?.id}
+              currentUserId={user?.user_id}
               refreshKey={refreshKey}
             />
           </section>
@@ -219,7 +228,7 @@ export default function Dashboard() {
             </div>
             <ActivityFeed
               refreshKey={refreshKey}
-              currentUserId={user?.id}
+              currentUserId={user?.user_id}
               onEdit={handleEditWorkout}
               onChanged={refresh}
             />
@@ -246,7 +255,6 @@ export default function Dashboard() {
       <RecordWorkoutDialog
         open={openRecord}
         onOpenChange={handleDialogOpenChange}
-        userId={user?.id}
         onLogged={handleWorkoutLogged}
         workoutToEdit={editingWorkout}
       />

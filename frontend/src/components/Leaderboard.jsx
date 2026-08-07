@@ -115,15 +115,26 @@ export default function Leaderboard({ timeframe, currentUserId, refreshKey }) {
 
             {/* Athlete */}
             <div className="flex min-w-0 items-center gap-3">
-              <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center border font-display text-xs font-black uppercase ${
-                  isMe
-                    ? "border-[#CCFF00]/50 bg-[#CCFF00]/10 text-[#CCFF00]"
-                    : "border-white/15 bg-[#141414] text-white/80"
-                }`}
-              >
-                {initialFrom(row.name)}
-              </div>
+              {row.picture ? (
+                <img
+                  src={row.picture}
+                  alt=""
+                  aria-hidden="true"
+                  className={`h-9 w-9 shrink-0 border object-cover ${
+                    isMe ? "border-[#CCFF00]/50" : "border-white/15"
+                  }`}
+                />
+              ) : (
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center border font-display text-xs font-black uppercase ${
+                    isMe
+                      ? "border-[#CCFF00]/50 bg-[#CCFF00]/10 text-[#CCFF00]"
+                      : "border-white/15 bg-[#141414] text-white/80"
+                  }`}
+                >
+                  {initialFrom(row.name)}
+                </div>
+              )}
               <div className="min-w-0">
                 <div className="truncate font-display text-base font-bold uppercase tracking-wide sm:text-lg">
                   {row.name}{" "}

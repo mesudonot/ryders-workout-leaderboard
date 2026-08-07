@@ -29,7 +29,6 @@ const calcPoints = (duration, calories) => {
 export default function RecordWorkoutDialog({
   open,
   onOpenChange,
-  userId,
   onLogged,
   workoutToEdit = null,
 }) {
@@ -76,7 +75,6 @@ export default function RecordWorkoutDialog({
     setSaving(true);
     try {
       const payload = {
-        user_id: userId,
         type,
         duration_min: d,
         calories: c,
