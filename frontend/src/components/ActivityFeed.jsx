@@ -61,7 +61,7 @@ export default function ActivityFeed({ refreshKey, currentUserId, onEdit, onChan
     if (!pendingDelete) return;
     setDeleting(true);
     try {
-      await deleteWorkout(pendingDelete.id, currentUserId);
+      await deleteWorkout(pendingDelete.id);
       toast.success("Workout deleted");
       setPendingDelete(null);
       onChanged?.();
