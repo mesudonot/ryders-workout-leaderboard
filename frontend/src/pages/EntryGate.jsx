@@ -72,9 +72,9 @@ export default function EntryGate() {
                 Own the board.
               </h1>
               <p className="mt-6 max-w-md text-base leading-relaxed text-white/70">
-                Every workout counts. Show up, put in the minutes, burn the
-                calories — climb the leaderboard your friends can&apos;t stop
-                checking.
+                Be the ryder you were born to me. Every workout counts. Show
+                up, put in the minutes, burn the calories — climb and claim
+                the leaderboard.
               </p>
             </div>
 
