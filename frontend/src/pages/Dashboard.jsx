@@ -61,7 +61,7 @@ export default function Dashboard() {
   const closeProfile = () => setProfileUserId(null);
 
   return (
-    <div className="relative min-h-screen bg-[#0A0A0A] text-white pb-32">
+    <div className="relative flex min-h-screen flex-col bg-[#0A0A0A] text-white">
       {/* Sticky header */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-black/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
@@ -197,7 +197,7 @@ export default function Dashboard() {
 
       {/* Main grid: Leaderboard + Feed */}
       <section
-        className="relative"
+        className="relative flex-1 pb-24"
         style={{
           backgroundImage:
             "linear-gradient(rgba(10,10,10,0.82), rgba(10,10,10,0.72)), url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1920&q=70')",
