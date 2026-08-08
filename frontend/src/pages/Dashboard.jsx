@@ -196,8 +196,18 @@ export default function Dashboard() {
       </section>
 
       {/* Main grid: Leaderboard + Feed */}
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
+      <section
+        className="relative"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(10,10,10,0.82), rgba(10,10,10,0.72)), url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1920&q=70')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }}
+      >
+        <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
           <section className="lg:col-span-2">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -265,6 +275,7 @@ export default function Dashboard() {
           </section>
         </div>
       </main>
+      </section>
 
       {/* Mobile FAB */}
       <motion.button
