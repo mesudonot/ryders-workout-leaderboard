@@ -28,6 +28,22 @@ const toCalories = (value, unit) => {
   return unit === "kj" ? n / KJ_PER_CAL : n;
 };
 
+// Format a Date into the value expected by <input type="datetime-local"> (local time, no offset)
+const toDateTimeLocal = (date) => {
+  const pad = (n) => String(n).padStart(2, "0");
+  return (
+    date.getFullYear() +
+    "-" +
+    pad(date.getMonth() + 1) +
+    "-" +
+    pad(date.getDate()) +
+    "T" +
+    pad(date.getHours()) +
+    ":" +
+    pad(date.getMinutes())
+  );
+};
+
 const calcPoints = (duration, energyValue, unit) => {
   const d = Number(duration) || 0;
   const c = toCalories(energyValue, unit);
@@ -48,6 +64,7 @@ export default function RecordWorkoutDialog({
   const [energyUnit, setEnergyUnit] = useState(
     () => localStorage.getItem(UNIT_STORAGE_KEY) || "cal"
   );
+  const [when, setWhen] = useState(() => toDateTimeLocal(new Date()));
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -65,11 +82,13 @@ export default function RecordWorkoutDialog({
           : workoutToEdit.calories;
       setEnergyValue(String(displayed));
       setNote(workoutToEdit.note || "");
+      setWhen(toDateTimeLocal(new Date(workoutToEdit.created_at)));
     } else {
       setType("Running");
       setDuration("");
       setEnergyValue("");
       setNote("");
+      setWhen(toDateTimeLocal(new Date()));
     }
   }, [open, workoutToEdit]);
 
@@ -106,6 +125,21 @@ export default function RecordWorkoutDialog({
 
     const calories = Math.round(toCalories(rawEnergy, energyUnit));
 
+    // Convert local datetime-local string to ISO UTC
+    let createdAtISO = null;
+    if (when) {
+      const parsed = new Date(when);
+      if (Number.isNaN(parsed.getTime())) {
+        toast.error("Enter a valid date and time");
+        return;
+      }
+      if (parsed.getTime() > Date.now() + 5 * 60 * 1000) {
+        toast.error("Date can't be in the future");
+        return;
+      }
+      createdAtISO = parsed.toISOString();
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -113,6 +147,7 @@ export default function RecordWorkoutDialog({
         duration_min: d,
         calories,
         note: note.trim(),
+        created_at: createdAtISO,
       };
       if (isEdit) {
         await updateWorkout(workoutToEdit.id, payload);
@@ -271,6 +306,31 @@ export default function RecordWorkoutDialog({
                 </p>
               )}
             </div>
+          </div>
+
+          {/* When */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-athletic text-white/50">
+                When
+              </label>
+              <button
+                type="button"
+                data-testid="when-now-btn"
+                onClick={() => setWhen(toDateTimeLocal(new Date()))}
+                className="text-[10px] font-bold uppercase tracking-athletic text-white/40 hover:text-[#CCFF00] transition"
+              >
+                Set to now
+              </button>
+            </div>
+            <Input
+              data-testid="when-input"
+              type="datetime-local"
+              value={when}
+              max={toDateTimeLocal(new Date(Date.now() + 5 * 60 * 1000))}
+              onChange={(e) => setWhen(e.target.value)}
+              className="h-12 rounded-none border-white/15 bg-[#141414] text-base text-white placeholder:text-white/30 focus-visible:border-[#CCFF00] focus-visible:ring-0 [color-scheme:dark]"
+            />
           </div>
 
           {/* Note */}

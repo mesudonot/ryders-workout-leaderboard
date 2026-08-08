@@ -64,6 +64,7 @@ class WorkoutInput(BaseModel):
     duration_min: int
     calories: int
     note: Optional[str] = ""
+    created_at: Optional[datetime] = None
 
 
 class LeaderboardEntry(BaseModel):
@@ -227,6 +228,13 @@ async def create_workout(payload: WorkoutInput, current: dict = Depends(get_curr
     if payload.calories < 0:
         raise HTTPException(status_code=400, detail="Calories must be >= 0")
 
+    now = datetime.now(timezone.utc)
+    created_at = payload.created_at or now
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    if created_at > now + timedelta(minutes=5):
+        raise HTTPException(status_code=400, detail="Date cannot be in the future")
+
     points = calc_points(payload.duration_min, payload.calories)
     workout = Workout(
         user_id=current["user_id"],
@@ -237,6 +245,7 @@ async def create_workout(payload: WorkoutInput, current: dict = Depends(get_curr
         calories=payload.calories,
         note=payload.note or "",
         points=points,
+        created_at=created_at,
     )
     doc = workout.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -269,6 +278,13 @@ async def update_workout(
         "note": payload.note or "",
         "points": points,
     }
+    if payload.created_at is not None:
+        ca = payload.created_at
+        if ca.tzinfo is None:
+            ca = ca.replace(tzinfo=timezone.utc)
+        if ca > datetime.now(timezone.utc) + timedelta(minutes=5):
+            raise HTTPException(status_code=400, detail="Date cannot be in the future")
+        update_doc["created_at"] = ca.isoformat()
     await db.workouts.update_one({"id": workout_id}, {"$set": update_doc})
     merged = {**existing, **update_doc}
     if isinstance(merged.get('created_at'), str):
