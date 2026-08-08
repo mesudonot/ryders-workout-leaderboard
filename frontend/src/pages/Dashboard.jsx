@@ -8,6 +8,9 @@ import {
   Flame,
   Timer,
   Fire,
+  PersonSimpleRun,
+  PersonSimpleTaiChi,
+  Lightning,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -129,15 +132,34 @@ export default function Dashboard() {
       </header>
 
       {/* Hero / Stats */}
-      <section className="relative overflow-hidden border-b border-white/10">
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <img
-            src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1920&q=70"
-            alt=""
-            className="h-full w-full object-cover object-center opacity-45"
+      <section className="relative overflow-hidden border-b border-white/10 bg-[#0A0A0A]">
+        {/* Minimal decorative icons */}
+        <div
+          className="pointer-events-none absolute inset-0 select-none"
+          aria-hidden="true"
+        >
+          <PersonSimpleRun
+            size={220}
+            weight="fill"
+            className="absolute -right-4 top-4 text-white/[0.035] sm:right-10 sm:top-6"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/85 to-[#0A0A0A]/55" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent" />
+          <Barbell
+            size={140}
+            weight="fill"
+            className="absolute right-52 -top-2 hidden text-white/[0.03] lg:block"
+          />
+          <PersonSimpleTaiChi
+            size={110}
+            weight="fill"
+            className="absolute right-72 bottom-4 hidden text-white/[0.03] xl:block"
+          />
+          <Lightning
+            size={70}
+            weight="fill"
+            className="absolute left-6 top-6 text-[#CCFF00]/[0.10] sm:left-10"
+          />
+          {/* subtle diagonal accent line */}
+          <div className="absolute inset-y-0 right-[42%] hidden w-px bg-gradient-to-b from-transparent via-white/[0.06] to-transparent lg:block" />
         </div>
         <div className="grain absolute inset-0 pointer-events-none" aria-hidden="true" />
         <div className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
