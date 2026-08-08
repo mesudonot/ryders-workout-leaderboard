@@ -39,7 +39,7 @@ const timeAgo = (iso) => {
   return new Date(iso).toLocaleDateString();
 };
 
-export default function ActivityFeed({ refreshKey, currentUserId, onEdit, onChanged }) {
+export default function ActivityFeed({ refreshKey, currentUserId, onEdit, onChanged, onSelectUser }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -135,9 +135,14 @@ export default function ActivityFeed({ refreshKey, currentUserId, onEdit, onChan
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <div className="min-w-0">
-                      <span className="font-display text-base font-bold uppercase tracking-wide">
+                      <button
+                        type="button"
+                        data-testid={`feed-user-${w.user_id}`}
+                        onClick={() => onSelectUser?.(w.user_id)}
+                        className="font-display text-base font-bold uppercase tracking-wide text-left hover:text-[#CCFF00] transition"
+                      >
                         {w.user_name}
-                      </span>
+                      </button>
                       <span className="ml-2 text-xs font-bold uppercase tracking-athletic text-white/40">
                         · {cfg.label}
                       </span>

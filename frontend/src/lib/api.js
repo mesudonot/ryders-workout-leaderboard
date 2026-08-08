@@ -38,3 +38,6 @@ export const getLeaderboard = (timeframe = "all") =>
 
 export const getMyStats = () =>
   api.get("/users/me/stats").then((r) => r.data);
+
+export const getUserHistory = (user_id) =>
+  api.get(`/users/${user_id}/history`).then((r) => r.data);

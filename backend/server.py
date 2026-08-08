@@ -363,6 +363,61 @@ async def user_stats(current: dict = Depends(get_current_user)):
     }
 
 
+@api_router.get("/users/{user_id}/history")
+async def user_history(user_id: str, limit: int = 50):
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    # Fall back to workout denormalized data if user record is missing (legacy)
+    fallback_name = None
+    fallback_picture = None
+    if not user:
+        sample = await db.workouts.find_one({"user_id": user_id}, {"_id": 0})
+        if not sample:
+            raise HTTPException(status_code=404, detail="User not found")
+        fallback_name = sample.get("user_name")
+        fallback_picture = sample.get("user_picture")
+
+    cursor = db.workouts.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit)
+    docs = await cursor.to_list(length=limit)
+    workouts = []
+    personal_best = None
+    per_type = {}
+    total_points = 0
+    total_minutes = 0
+    total_calories = 0
+    for d in docs:
+        if isinstance(d.get('created_at'), str):
+            d['created_at'] = datetime.fromisoformat(d['created_at'])
+        d.setdefault('user_picture', None)
+        w = Workout(**d)
+        workouts.append(w)
+        total_points += w.points
+        total_minutes += w.duration_min
+        total_calories += w.calories
+        if not personal_best or w.points > personal_best.points:
+            personal_best = w
+        stats_for_type = per_type.setdefault(w.type, {"count": 0, "points": 0, "minutes": 0})
+        stats_for_type["count"] += 1
+        stats_for_type["points"] += w.points
+        stats_for_type["minutes"] += w.duration_min
+
+    return {
+        "user": {
+            "user_id": user_id,
+            "name": (user or {}).get("name") or fallback_name or "Athlete",
+            "picture": (user or {}).get("picture") or fallback_picture,
+        },
+        "stats": {
+            "total_points": total_points,
+            "workouts_count": len(workouts),
+            "total_minutes": total_minutes,
+            "total_calories": total_calories,
+        },
+        "per_type": per_type,
+        "personal_best": personal_best.model_dump(mode="json") if personal_best else None,
+        "workouts": [w.model_dump(mode="json") for w in workouts],
+    }
+
+
 app.include_router(api_router)
 
 app.add_middleware(
