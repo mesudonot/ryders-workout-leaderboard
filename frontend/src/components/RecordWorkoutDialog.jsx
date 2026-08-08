@@ -19,9 +19,18 @@ const WORKOUT_TYPES = [
   { value: "Yoga", Icon: PersonSimpleTaiChi, color: "#007AFF" },
 ];
 
-const calcPoints = (duration, calories) => {
+const KJ_PER_CAL = 4.184;
+const UNIT_STORAGE_KEY = "sweatboard.energyUnit";
+
+const toCalories = (value, unit) => {
+  const n = Number(value);
+  if (!n || Number.isNaN(n)) return 0;
+  return unit === "kj" ? n / KJ_PER_CAL : n;
+};
+
+const calcPoints = (duration, energyValue, unit) => {
   const d = Number(duration) || 0;
-  const c = Number(calories) || 0;
+  const c = toCalories(energyValue, unit);
   if (d <= 0) return 0;
   return 10 + d + (d >= 45 ? 5 : 0) + Math.floor(c / 10);
 };
@@ -35,7 +44,10 @@ export default function RecordWorkoutDialog({
   const isEdit = Boolean(workoutToEdit);
   const [type, setType] = useState("Running");
   const [duration, setDuration] = useState("");
-  const [calories, setCalories] = useState("");
+  const [energyValue, setEnergyValue] = useState("");
+  const [energyUnit, setEnergyUnit] = useState(
+    () => localStorage.getItem(UNIT_STORAGE_KEY) || "cal"
+  );
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -44,40 +56,62 @@ export default function RecordWorkoutDialog({
     if (workoutToEdit) {
       setType(workoutToEdit.type);
       setDuration(String(workoutToEdit.duration_min));
-      setCalories(String(workoutToEdit.calories));
+      // Stored value is always calories — show it in the user's preferred unit
+      const preferred = localStorage.getItem(UNIT_STORAGE_KEY) || "cal";
+      setEnergyUnit(preferred);
+      const displayed =
+        preferred === "kj"
+          ? Math.round(workoutToEdit.calories * KJ_PER_CAL)
+          : workoutToEdit.calories;
+      setEnergyValue(String(displayed));
       setNote(workoutToEdit.note || "");
     } else {
       setType("Running");
       setDuration("");
-      setCalories("");
+      setEnergyValue("");
       setNote("");
     }
   }, [open, workoutToEdit]);
 
   const projectedPoints = useMemo(
-    () => calcPoints(duration, calories),
-    [duration, calories]
+    () => calcPoints(duration, energyValue, energyUnit),
+    [duration, energyValue, energyUnit]
   );
+
+  const handleUnitChange = (nextUnit) => {
+    if (nextUnit === energyUnit) return;
+    // Convert the current input value so the displayed energy stays equivalent
+    const n = Number(energyValue);
+    if (!Number.isNaN(n) && n > 0) {
+      const converted =
+        nextUnit === "kj" ? Math.round(n * KJ_PER_CAL) : Math.round(n / KJ_PER_CAL);
+      setEnergyValue(String(converted));
+    }
+    setEnergyUnit(nextUnit);
+    localStorage.setItem(UNIT_STORAGE_KEY, nextUnit);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const d = Number(duration);
-    const c = Number(calories);
+    const rawEnergy = Number(energyValue);
     if (!d || d <= 0) {
       toast.error("Duration must be greater than 0");
       return;
     }
-    if (c < 0 || Number.isNaN(c)) {
-      toast.error("Calories can't be negative");
+    if (rawEnergy < 0 || Number.isNaN(rawEnergy)) {
+      toast.error(`${energyUnit === "kj" ? "Kilojoules" : "Calories"} can't be negative`);
       return;
     }
+
+    const calories = Math.round(toCalories(rawEnergy, energyUnit));
 
     setSaving(true);
     try {
       const payload = {
         type,
         duration_min: d,
-        calories: c,
+        calories,
         note: note.trim(),
       };
       if (isEdit) {
@@ -170,19 +204,72 @@ export default function RecordWorkoutDialog({
               />
             </div>
             <div>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-athletic text-white/50">
-                Calories
-              </label>
-              <Input
-                data-testid="calories-input"
-                type="number"
-                min="0"
-                inputMode="numeric"
-                value={calories}
-                onChange={(e) => setCalories(e.target.value)}
-                placeholder="250"
-                className="h-12 rounded-none border-white/15 bg-[#141414] text-base text-white placeholder:text-white/30 focus-visible:border-[#CCFF00] focus-visible:ring-0"
-              />
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <label className="block text-xs font-bold uppercase tracking-athletic text-white/50">
+                  Energy Burned
+                </label>
+                <div
+                  role="tablist"
+                  aria-label="Energy unit"
+                  data-testid="energy-unit-toggle"
+                  className="flex border border-white/15 bg-[#141414]"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={energyUnit === "cal"}
+                    data-testid="unit-cal-btn"
+                    onClick={() => handleUnitChange("cal")}
+                    className={`px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-athletic transition ${
+                      energyUnit === "cal"
+                        ? "bg-[#CCFF00] text-black"
+                        : "text-white/60 hover:text-white"
+                    }`}
+                  >
+                    Cal
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={energyUnit === "kj"}
+                    data-testid="unit-kj-btn"
+                    onClick={() => handleUnitChange("kj")}
+                    className={`border-l border-white/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-athletic transition ${
+                      energyUnit === "kj"
+                        ? "bg-[#CCFF00] text-black"
+                        : "text-white/60 hover:text-white"
+                    }`}
+                  >
+                    KJ
+                  </button>
+                </div>
+              </div>
+              <div className="relative">
+                <Input
+                  data-testid="calories-input"
+                  type="number"
+                  min="0"
+                  inputMode="numeric"
+                  value={energyValue}
+                  onChange={(e) => setEnergyValue(e.target.value)}
+                  placeholder={energyUnit === "kj" ? "1050" : "250"}
+                  className="h-12 rounded-none border-white/15 bg-[#141414] pr-14 text-base text-white placeholder:text-white/30 focus-visible:border-[#CCFF00] focus-visible:ring-0"
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold uppercase tracking-athletic text-white/40"
+                >
+                  {energyUnit === "kj" ? "kJ" : "cal"}
+                </span>
+              </div>
+              {energyUnit === "kj" && Number(energyValue) > 0 && (
+                <p
+                  data-testid="kj-conversion-hint"
+                  className="mt-1 text-[10px] uppercase tracking-athletic text-white/40"
+                >
+                  ≈ {Math.round(toCalories(energyValue, "kj"))} cal
+                </p>
+              )}
             </div>
           </div>
 

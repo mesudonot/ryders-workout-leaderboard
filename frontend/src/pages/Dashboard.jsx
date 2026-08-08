@@ -130,8 +130,17 @@ export default function Dashboard() {
 
       {/* Hero / Stats */}
       <section className="relative overflow-hidden border-b border-white/10">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <img
+            src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1920&q=70"
+            alt=""
+            className="h-full w-full object-cover object-center opacity-45"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/85 to-[#0A0A0A]/55" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent" />
+        </div>
         <div className="grain absolute inset-0 pointer-events-none" aria-hidden="true" />
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="mb-3 text-xs font-bold uppercase tracking-athletic text-[#CCFF00]">
@@ -187,8 +196,18 @@ export default function Dashboard() {
       </section>
 
       {/* Main grid: Leaderboard + Feed */}
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
+      <section
+        className="relative"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(10,10,10,0.82), rgba(10,10,10,0.72)), url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1920&q=70')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }}
+      >
+        <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
           <section className="lg:col-span-2">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -256,6 +275,7 @@ export default function Dashboard() {
           </section>
         </div>
       </main>
+      </section>
 
       {/* Mobile FAB */}
       <motion.button

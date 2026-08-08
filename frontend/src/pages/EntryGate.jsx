@@ -71,10 +71,12 @@ export default function EntryGate() {
                 <br />
                 Own the board.
               </h1>
-              <p className="mt-6 max-w-md text-base leading-relaxed text-white/70">
+              <p className="mt-6 font-display text-2xl font-black uppercase tracking-tight text-[#CCFF00] sm:text-3xl">
+                Be the ryder you were born to be.
+              </p>
+              <p className="mt-4 max-w-md text-base leading-relaxed text-white/70">
                 Every workout counts. Show up, put in the minutes, burn the
-                calories — climb the leaderboard your friends can&apos;t stop
-                checking.
+                calories — climb and claim the leaderboard.
               </p>
             </div>
 
