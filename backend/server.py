@@ -89,7 +89,9 @@ def calc_points(duration_min: int, calories: int) -> int:
 def since_for_timeframe(timeframe: str) -> Optional[datetime]:
     now = datetime.now(timezone.utc)
     if timeframe == 'week':
-        return now - timedelta(days=7)
+        # Monday 00:00 UTC of the current week (Mon-Sun inclusive)
+        monday = now - timedelta(days=now.weekday())
+        return monday.replace(hour=0, minute=0, second=0, microsecond=0)
     if timeframe == 'month':
         return now - timedelta(days=30)
     return None
