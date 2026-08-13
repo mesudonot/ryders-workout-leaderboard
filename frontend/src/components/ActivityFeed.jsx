@@ -4,6 +4,8 @@ import {
   PersonSimpleRun,
   Barbell,
   PersonSimpleTaiChi,
+  PersonSimpleWalk,
+  Sparkle,
   Clock,
   PencilSimple,
   Trash,
@@ -25,6 +27,8 @@ const typeConfig = {
   Running: { icon: PersonSimpleRun, accent: "#FF3B30", label: "Run" },
   Weights: { icon: Barbell, accent: "#CCFF00", label: "Lift" },
   Yoga: { icon: PersonSimpleTaiChi, accent: "#007AFF", label: "Yoga" },
+  Walk: { icon: PersonSimpleWalk, accent: "#14B8A6", label: "Walk" },
+  Other: { icon: Sparkle, accent: "#F59E0B", label: "Other" },
 };
 
 const timeAgo = (iso) => {

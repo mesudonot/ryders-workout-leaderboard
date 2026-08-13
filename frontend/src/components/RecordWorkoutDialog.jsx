@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { PersonSimpleRun, Barbell, PersonSimpleTaiChi } from "@phosphor-icons/react";
+import { PersonSimpleRun, Barbell, PersonSimpleTaiChi, PersonSimpleWalk, Sparkle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { createWorkout, updateWorkout } from "@/lib/api";
 
@@ -17,6 +17,8 @@ const WORKOUT_TYPES = [
   { value: "Running", Icon: PersonSimpleRun, color: "#FF3B30" },
   { value: "Weights", Icon: Barbell, color: "#CCFF00" },
   { value: "Yoga", Icon: PersonSimpleTaiChi, color: "#007AFF" },
+  { value: "Walk", Icon: PersonSimpleWalk, color: "#14B8A6" },
+  { value: "Other", Icon: Sparkle, color: "#F59E0B" },
 ];
 
 const KJ_PER_CAL = 4.184;
@@ -191,7 +193,7 @@ export default function RecordWorkoutDialog({
             <label className="mb-2 block text-xs font-bold uppercase tracking-athletic text-white/50">
               Workout Type
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
               {WORKOUT_TYPES.map(({ value, Icon, color }) => {
                 const active = type === value;
                 return (

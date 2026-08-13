@@ -29,7 +29,7 @@ api_router = APIRouter(prefix="/api")
 
 
 # ============= Models =============
-WorkoutType = Literal['Running', 'Weights', 'Yoga']
+WorkoutType = Literal['Running', 'Weights', 'Yoga', 'Walk', 'Other']
 
 
 class User(BaseModel):

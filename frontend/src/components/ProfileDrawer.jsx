@@ -9,6 +9,8 @@ import {
   PersonSimpleRun,
   Barbell,
   PersonSimpleTaiChi,
+  PersonSimpleWalk,
+  Sparkle,
   PencilSimple,
   Trash,
   Medal,
@@ -30,6 +32,8 @@ const typeConfig = {
   Running: { icon: PersonSimpleRun, accent: "#FF3B30", label: "Running" },
   Weights: { icon: Barbell, accent: "#CCFF00", label: "Weights" },
   Yoga: { icon: PersonSimpleTaiChi, accent: "#007AFF", label: "Yoga" },
+  Walk: { icon: PersonSimpleWalk, accent: "#14B8A6", label: "Walk" },
+  Other: { icon: Sparkle, accent: "#F59E0B", label: "Other" },
 };
 
 const initialFrom = (name) =>
