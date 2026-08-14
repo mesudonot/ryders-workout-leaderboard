@@ -171,7 +171,7 @@ export default function RecordWorkoutDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-testid="record-dialog"
-        className="max-w-lg rounded-none border-white/10 bg-[#0F0F0F] p-0 text-white sm:rounded-none"
+        className="max-h-[92dvh] max-w-lg overflow-y-auto rounded-none border-white/10 bg-[#0F0F0F] p-0 text-white sm:rounded-none"
       >
         <DialogHeader className="border-b border-white/10 px-6 py-5">
           <p className="text-[10px] font-bold uppercase tracking-athletic text-[#CCFF00]">
