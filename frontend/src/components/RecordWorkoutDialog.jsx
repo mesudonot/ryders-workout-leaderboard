@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { PersonSimpleRun, Barbell, PersonSimpleTaiChi } from "@phosphor-icons/react";
+import { PersonSimpleRun, Barbell, PersonSimpleTaiChi, PersonSimpleWalk, Sparkle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { createWorkout, updateWorkout } from "@/lib/api";
 
@@ -17,6 +17,8 @@ const WORKOUT_TYPES = [
   { value: "Running", Icon: PersonSimpleRun, color: "#FF3B30" },
   { value: "Weights", Icon: Barbell, color: "#CCFF00" },
   { value: "Yoga", Icon: PersonSimpleTaiChi, color: "#007AFF" },
+  { value: "Walk", Icon: PersonSimpleWalk, color: "#14B8A6" },
+  { value: "Other", Icon: Sparkle, color: "#F59E0B" },
 ];
 
 const KJ_PER_CAL = 4.184;
@@ -169,7 +171,7 @@ export default function RecordWorkoutDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-testid="record-dialog"
-        className="max-w-lg rounded-none border-white/10 bg-[#0F0F0F] p-0 text-white sm:rounded-none"
+        className="max-h-[92dvh] max-w-lg overflow-y-auto rounded-none border-white/10 bg-[#0F0F0F] p-0 text-white sm:rounded-none"
       >
         <DialogHeader className="border-b border-white/10 px-6 py-5">
           <p className="text-[10px] font-bold uppercase tracking-athletic text-[#CCFF00]">
@@ -191,7 +193,7 @@ export default function RecordWorkoutDialog({
             <label className="mb-2 block text-xs font-bold uppercase tracking-athletic text-white/50">
               Workout Type
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
               {WORKOUT_TYPES.map(({ value, Icon, color }) => {
                 const active = type === value;
                 return (

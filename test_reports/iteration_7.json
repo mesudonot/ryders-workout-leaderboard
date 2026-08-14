@@ -1,0 +1,50 @@
+{
+  "summary": "Retested mobile scroll fix for RecordWorkoutDialog at 390x844 and desktop regression at 1440x900. Fix (max-h-[92dvh] overflow-y-auto) verified working. Log It / Cancel / when-input all reachable via internal scroll on mobile; submit closes the dialog. Desktop unchanged (no scroll needed).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_evidence": {
+    "mobile_390x844": {
+      "dialog_overflowY": "auto",
+      "dialog_max_height_px": 776.48,
+      "viewport_height": 844,
+      "clientHeight": 774,
+      "scrollHeight_empty": 886,
+      "scrollHeight_filled": 886,
+      "scrollable": true,
+      "when_input_reachable": true,
+      "log_it_bottom_after_scroll_px": 784.77,
+      "cancel_bottom_after_scroll_px": 784.77,
+      "submit_closes_dialog": true
+    },
+    "desktop_1440x900": {
+      "dialog_max_height_px": 828,
+      "clientHeight": 778,
+      "scrollHeight": 778,
+      "needs_scroll": false,
+      "submit_closes_dialog": true,
+      "toast_shown": "+60 points logged"
+    },
+    "screenshots": [
+      "/app/test_reports/screens/mobile_dialog_top.png",
+      "/app/test_reports/screens/mobile_dialog_scrolled.png",
+      "/app/test_reports/screens/mobile_after_submit.png"
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fix is minimal and correct: max-h-[92dvh] uses dvh which accounts for the mobile URL bar/keyboard chrome; overflow-y-auto enables internal scroll. Good choice.",
+    "Consider adding sticky footer for Cancel/Log It row so the CTA is always visible without needing user to scroll, but current behavior meets the fix requirement."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "Seeded ephemeral session in Mongo (user_1786692180481 / test_session_1786692180481) and cleaned up after test.",
+  "seed_data_creation": "1 user + 1 session doc + 2 workouts (both cleaned up post-test).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Mobile scroll fix on RecordWorkoutDialog confirmed. If future changes touch DialogContent classes, re-verify overflow-y=auto and max-h-[92dvh] at 390x844."
+}
